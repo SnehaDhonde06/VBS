@@ -233,7 +233,7 @@
           return;
       }
 
-      body.innerHTML = list.map(h =>
+      body.innerHTML = list.map(h => `
           <tr>
               <td>#${h.id}</td>
               <td>${escapeHtml(h.description)}</td>
