@@ -14,6 +14,75 @@
         min-height:100vh;
         padding:20px
     }
+    /* Passbook header layout */
+.passbook-actions {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+/* Download PDF button */
+.btn-pdf {
+    height: 64px;
+    padding: 0 22px;
+    border-radius: 12px;
+    border: none;
+    background-color
+    color: #6a1b1b;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 10px 25px rgba(255, 154, 158, 0.35);
+    transition: all 0.3s ease;
+}
+
+.btn-pdf:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(255, 154, 158, 0.55);
+}
+
+.btn-pdf:active {
+    transform: scale(0.97);
+}
+
+.btn-pdf .icon {
+    font-size: 22px;
+}
+
+.btn-pdf .text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.btn-pdf .text span {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.75;
+}
+
+/* Responsive adjustment */
+@media (max-width: 600px) {
+    .passbook-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .passbook-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .btn-pdf {
+        height: 56px;
+        padding: 0 18px;
+    }
+}
+
 
     .container{
         max-width:1000px;
@@ -56,22 +125,25 @@
         display:flex;
         justify-content:space-between;
         align-items:center;
-        margin-bottom:30px
+        margin-bottom:30px;
+        margin-left:10px;
     }
 
     .balance-card{
         background:linear-gradient(135deg,#667eea,#764ba2);
         color:#fff;
         padding:20px 30px;
-        border-radius:10px
-    }
+        border-radius:10px;
+        margin-top:10px;
+        }
 
     .balance-card .amount{font-size:28px;font-weight:700}
 
     .transactions-section{
         background:#f8f9fa;
         padding:30px;
-        border-radius:12px
+        border-radius:12px;
+        margin-top: 10px;
     }
 
     .transactions-list{display:flex;flex-direction:column;gap:10px}
@@ -145,6 +217,7 @@
     .btn-header{
         min-width: 130px;
         height: 42px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -154,6 +227,10 @@
     .message{display:none;margin-bottom:20px}
     .message.show{display:block}
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
 </head>
 
 <body>
@@ -169,17 +246,23 @@
     </div>
   </div>
 
-  <div class="content">
+  <div class="passbook-header">
+    <h2>Your Passbook</h2>
 
-    <div class="passbook-header">
-      <h2>Your Passbook</h2>
+    <div style="display:flex;gap:15px;align-items:center">
       <div class="balance-card">
         <p>Current Balance</p>
         <div class="amount">₹<span id="currentBalance">0.00</span></div>
       </div>
-    </div>
 
-    <div class="transactions-section">
+      <button class="btn-header" onclick="downloadPDF()">
+         Download PDF
+      </button>
+    </div>
+  </div>
+
+
+  <div class="transactions-section">
       <div id="transactionsList" class="transactions-list"></div>
       <div id="paginationControls" class="pagination"></div>
     </div>
@@ -266,6 +349,45 @@
       getUserIdFromURL();
       loadPassbook();
   }
+
+  function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Virtual Banking System - Passbook", 14, 20);
+
+    doc.setFontSize(12);
+    doc.text(`User ID: ${userId}`, 14, 30);
+    doc.text(`Generated On: ${new Date().toLocaleString('en-IN')}`, 14, 38);
+
+    const tableData = transactions.map(t => {
+        let type = getType(t.description);
+        let sign = '-';
+        if (type === 'deposit') sign = '+';
+        else if (type === 'transfer' && t.description.toLowerCase().includes('received'))
+            sign = '+';
+
+        return [
+            new Date(t.date).toLocaleString('en-IN'),
+            t.description,
+            `${sign}₹${t.amount.toFixed(2)}`,
+            `₹${t.currBalance.toFixed(2)}`
+        ];
+    });
+
+    doc.autoTable({
+        startY: 45,
+        head: [['Date', 'Description', 'Amount', 'Balance']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [102, 126, 234] },
+        styles: { fontSize: 10 }
+    });
+
+    doc.save(`VBS_Passbook_User_${userId}.pdf`);
+}
+
 </script>
 </body>
 </html>

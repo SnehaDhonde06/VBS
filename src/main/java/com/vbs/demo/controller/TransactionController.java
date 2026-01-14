@@ -14,74 +14,61 @@ import java.util.List;
 @RestController
 @CrossOrigin(origins = "*")
 public class TransactionController {
-
     @Autowired
     UserRepo userRepo;
-
     @Autowired
     TransactionRepo transactionRepo;
 
     @PostMapping("/deposit")
-    public String deposit(@RequestBody TransactionDto obj)
+    public String deposit(@RequestBody Transaction obj)
     {
-       User user = userRepo.findById(obj.getId())
-        .orElseThrow(()->new RuntimeException("not found"));
-       double newBalance = user.getBalance() + obj.getAmount();
-       user.setBalance(newBalance);
-       userRepo.save(user);
-
-
-        Transaction t = new Transaction();
-        t.setAmount(obj.getAmount());
-        t.setCurrBalance(newBalance);
-        t.setDescription("Rs"+obj.getAmount()+"Deposit successfully");
-        t.setUserId(obj.getId());
-
-        transactionRepo.save(t);
-        return "Deposited Successful";
-
-    }
-
-    @PostMapping("/withdraw")
-    public String withdraw(@RequestBody TransactionDto obj)
-    {
-        User user = userRepo.findById(obj.getId())
-                .orElseThrow(()->new RuntimeException("not found"));
-        double newBalance = user.getBalance() - obj.getAmount();
-        if(newBalance<0)
-        {
-            return "Balance Insufficient";
-        }
-
+        User user = userRepo.findById(obj.getId()).orElseThrow(()->new RuntimeException("Not found"));
+        double newBalance = user.getBalance() + obj.getAmount();
         user.setBalance(newBalance);
         userRepo.save(user);
 
+        Transaction t = new Transaction();
+        t.setAmount(obj.getAmount());
+        t.setCurrBalance(newBalance);
+        t.setDescription("Rs "+obj.getAmount()+" Deposited Successfully");
+        t.setUserId(obj.getId());
+        transactionRepo.save(t);
+        return "Deposit Successful";
+    }
+
+    @PostMapping("/withdraw")
+    public String withdraw(@RequestBody Transaction obj)
+    {
+        User user = userRepo.findById(obj.getId()).orElseThrow(()->new RuntimeException("Not found"));
+        double newBalance = user.getBalance() - obj.getAmount();
+        if(newBalance < 0)
+        {
+            return "Balance Insufficient";
+        }
+        user.setBalance(newBalance);
+        userRepo.save(user);
 
         Transaction t = new Transaction();
         t.setAmount(obj.getAmount());
         t.setCurrBalance(newBalance);
-        t.setDescription("Rs"+obj.getAmount()+"Withdrawal successfully");
+        t.setDescription("Rs "+obj.getAmount()+" Withdrawal Successfully");
         t.setUserId(obj.getId());
-
         transactionRepo.save(t);
         return "Withdrawal Successful";
-
     }
 
     @PostMapping("/transfer")
     public String transfer(@RequestBody TransferDto obj)
     {
-        User sender = userRepo.findById(obj.getId())
-                .orElseThrow(()->new RuntimeException("Not found"));
+        User sender= userRepo.findById(obj.getId())
+                .orElseThrow(()->new RuntimeException("User not found"));
         User rec = userRepo.findByUsername(obj.getUsername());
-
-        if(rec==null) return "Username not found";
-        if(sender.getId()== rec.getId()) return "Self Transfer is not allowed";
-        if(obj.getAmount() < 1) return "Invalid amount";
-        double sbalance = sender.getBalance() - obj.getAmount();
+        if(rec == null) return "User not found";
+        if(sender.getId() == rec.getId()) return "Self transfer not allowed";
+        if(obj.getAmount()<0) return "Invalid amount";
+        double sbalance= sender.getBalance() - obj.getAmount();
         double rbalance = rec.getBalance() + obj.getAmount();
-
-        if(sbalance<0) return "Insuficient Balance";
+        if(sbalance<0) return "Insufficient Balance";
 
         sender.setBalance(sbalance);
         rec.setBalance(rbalance);
@@ -89,18 +76,19 @@ public class TransactionController {
         userRepo.save(sender);
         userRepo.save(rec);
 
-        Transaction t1 = new Transaction();
+
+        Transaction t1=new Transaction();
         Transaction t2 = new Transaction();
 
         t1.setAmount(obj.getAmount());
         t1.setCurrBalance(sbalance);
-        t1.setDescription("Rs "+obj.getAmount()+"sent to "+rec.getUsername());
+        t1.setDescription("Rs "+obj.getAmount()+" Send to "+rec.getUsername()+" Successfully");
         t1.setUserId(sender.getId());
 
         t2.setAmount(obj.getAmount());
         t2.setCurrBalance(rbalance);
-        t2.setDescription("Rs "+obj.getAmount()+"received from"+sender.getUsername());
-        t2.setUserId(obj.getId());
+        t2.setDescription("Rs "+obj.getAmount()+" Received from "+sender.getUsername()+" Successfully");
+        t2.setUserId(rec.getId());
 
         transactionRepo.save(t1);
         transactionRepo.save(t2);
